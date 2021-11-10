@@ -1,8 +1,8 @@
 '''
 An object which defines a  cylinder with one round side for rendering
 
-:author: micou(Zezhou Sun), Zack(Wanzhi Wang)
-:version: 2021.10.12
+:author: micou(Zezhou Sun), Zack (Wanzhi Wang)
+:version: 2021.11.09
 '''
 import os
 import numpy as np

@@ -3,8 +3,8 @@ This is the main entry of your program. Almost all things you need to implement 
 The main class Sketch inherits from CanvasBase. For the parts you need to implement, they are all marked with TODO.
 First version Created on 09/28/2018
 
-:author: micou(Zezhou Sun)
-:version: 2021.2.1
+:author: micou(Zezhou Sun), Zack (Wanzhi Wang)
+:version: 2021.11.09
 '''
 import os
 import wx
@@ -198,9 +198,13 @@ class Sketch(CanvasBase):
         :return: None
         """
         if chr(keycode) in "rR":
-            # reset viewing angle only
+            # reset viewing angle
             self.viewing_quaternion = Quaternion()
+            # reset content of vivarium
+            self.vivarium.reset()
             self.update()
+        elif chr(keycode) in "fF":
+            self.vivarium.add_food()
 
 
 if __name__ == "__main__":

@@ -2,11 +2,11 @@
 Model our creature and wrap it in one class
 First version at 09/28/2021
 
-:author: micou(Zezhou Sun)
-:version: 2021.2.1
+:author: micou(Zezhou Sun), Zack (Wanzhi Wang)
+:version: 2021.11.09
 """
 import random
-
+import math
 
 from Component import Component
 from Point import Point
@@ -79,39 +79,77 @@ class ModelLinkage(Component):
 
         self.components = [link1, link2, link3, link4]
 
-class BodyLinkage(Component):
+
+class HookLinkage(Component):
     """
-    Define our linkage model
+    Define a linkage that forms an arm of a hook
     """
 
     components = None
     contextParent = None
 
-    def __init__(self, parent, position, LinkageLength = 0.1, display_obj=None):
+    def __init__(self, parent, position, linkageLength=0.5, display_obj=None):
         super().__init__(position, display_obj)
         self.components = []
         self.contextParent = parent
 
-        topBody = Component(Point((0, 0, 0)), DisplayableHalfRoundCylinder(self.contextParent, 1*LinkageLength, 0.5*LinkageLength))
-        topBody.setDefaultColor(Ct.DARKORANGE2)
+        joint = Component(Point((0, 0, 0)),
+                          DisplayableSphere(self.contextParent, linkageLength))
+        joint.setDefaultColor(Ct.SILVER)
+        part1 = Component(Point((0, 0, 0)),
+                          DisplayableCube(self.contextParent, 1,
+                                          [linkageLength * 0.8, linkageLength * 0.8, linkageLength * 4]))
+        part1.setDefaultColor(Ct.SILVER)
+        part2 = Component(Point((0, 0, linkageLength * 3.7)),
+                          DisplayableCube(self.contextParent, 1,
+                                          [linkageLength * 0.8, linkageLength * 0.8, linkageLength * 3]))
+        part2.setDefaultColor(Ct.SILVER)
+        part2.setDefaultAngle(part2.uAxis, 60)
+
+        self.addChild(joint)
+        joint.addChild(part1)
+        part1.addChild(part2)
+
+        self.components = [joint]
+
+
+class BodyLinkage(Component):
+    """
+    Define a linkage that forms the body of an Android
+    """
+
+    components = None
+    contextParent = None
+
+    def __init__(self, parent, position, color, LinkageLength=0.1, display_obj=None):
+        super().__init__(position, display_obj)
+        self.components = []
+        self.contextParent = parent
+
+        topBody = Component(Point((0, 0, 0)),
+                            DisplayableHalfRoundCylinder(self.contextParent, 1 * LinkageLength, 0.5 * LinkageLength))
+        topBody.setDefaultColor(color)
         topBody.vRange = [-90, 90]
 
-        head = Component(Point((0, 1*LinkageLength, 0.6*LinkageLength)), DisplayableSphere(self.contextParent, 0.8*LinkageLength))
-        head.setDefaultColor(Ct.DARKORANGE1)
+        head = Component(Point((0, 1 * LinkageLength, 0.6 * LinkageLength)),
+                         DisplayableSphere(self.contextParent, 0.8 * LinkageLength))
+        head.setDefaultColor(color)
         head.uRange = [-65, 45]
         head.vRange = [-73, 73]
         head.wRange = [-20, 20]
 
-        botBody = Component(Point((0, 0, 0)), DisplayableCylinder(self.contextParent, 1*LinkageLength, 1*LinkageLength))
-        botBody.setDefaultColor(Ct.DARKORANGE3)
+        botBody = Component(Point((0, 0, 0)),
+                            DisplayableCylinder(self.contextParent, 1 * LinkageLength, 1 * LinkageLength))
+        botBody.setDefaultColor(color)
 
-
-        leftEye = Component(Point((-0.35*LinkageLength, 0.2*LinkageLength, 0.66*LinkageLength)), DisplayableSphere(self.contextParent, 0.1*LinkageLength))
+        leftEye = Component(Point((-0.35 * LinkageLength, 0.2 * LinkageLength, 0.66 * LinkageLength)),
+                            DisplayableSphere(self.contextParent, 0.1 * LinkageLength))
         leftEye.setDefaultColor(Ct.RED)
         leftEye.uRange = [-45, 45]
         leftEye.vRange = [-45, 45]
 
-        rightEye = Component(Point((0.35*LinkageLength, 0.2*LinkageLength, 0.66*LinkageLength)), DisplayableSphere(self.contextParent, 0.1*LinkageLength))
+        rightEye = Component(Point((0.35 * LinkageLength, 0.2 * LinkageLength, 0.66 * LinkageLength)),
+                             DisplayableSphere(self.contextParent, 0.1 * LinkageLength))
         rightEye.setDefaultColor(Ct.RED)
         rightEye.uRange = [-45, 45]
         rightEye.vRange = [-45, 45]
@@ -122,49 +160,57 @@ class BodyLinkage(Component):
         head.addChild(leftEye)
         head.addChild(rightEye)
 
-        self.components = [topBody, head]
+        self.components = []
 
 
 class ArmLinkage(Component):
     """
-    Define our linkage model
+    Define a linkage that forms the arm of an Android
     """
 
     components = None
     contextParent = None
 
-    def __init__(self, parent, position, LinkageLength = 0.1, display_obj=None):
+    def __init__(self, parent, position, color, LinkageLength=0.1, display_obj=None):
         super().__init__(position, display_obj)
         self.components = []
         self.contextParent = parent
         self.chained_rotate = 1
 
-        humeri = Component(Point((0, 0, 0)), DisplayableCylinder(self.contextParent, 0.1*LinkageLength, 0.5*LinkageLength))
-        humeri.setDefaultColor(Ct.DARKORANGE1)
+        humeri = Component(Point((0, 0, 0)),
+                           DisplayableCylinder(self.contextParent, 0.1 * LinkageLength, 0.5 * LinkageLength))
+        humeri.setDefaultColor(color)
         humeri.setDefaultAngle(humeri.wAxis, 90)
         humeri.uRange = [-225, 45]
         humeri.wRange = [90, 90]
 
-        shoulder = Component(Point((0, 0, -0.25*LinkageLength)), DisplayableCube(self.contextParent, 1, [0.4*LinkageLength, 0.25*LinkageLength, 0.8*LinkageLength]))
-        shoulder.setDefaultColor(Ct.DARKORANGE2)
+        shoulder = Component(Point((0, 0, -0.25 * LinkageLength)), DisplayableCube(self.contextParent, 1,
+                                                                                   [0.4 * LinkageLength,
+                                                                                    0.25 * LinkageLength,
+                                                                                    0.8 * LinkageLength]))
+        shoulder.setDefaultColor(color)
         shoulder.uRange = [-20, 5]
         # Since the children of shoulder does not contain any joint,
         # we chain shoulder and its children so they can be colored together when selected.
         shoulder.chained_child = 1
 
-        upperArm = Component(Point((0, 0, 0.8*LinkageLength)), DisplayableHalfRoundCylinder(self.contextParent, 0.1*LinkageLength, 0.4*LinkageLength))
-        upperArm.setDefaultColor(Ct.DARKORANGE1)
+        upperArm = Component(Point((0, 0, 0.8 * LinkageLength)),
+                             DisplayableHalfRoundCylinder(self.contextParent, 0.1 * LinkageLength, 0.4 * LinkageLength))
+        upperArm.setDefaultColor(color)
         upperArm.setDefaultAngle(upperArm.uAxis, 90)
 
-        foreArm = Component(Point((0, 0.4*LinkageLength, 0)), DisplayableRoundCylinder(self.contextParent, 0.1*LinkageLength, 0.3*LinkageLength))
-        foreArm.setDefaultColor(Ct.DARKORANGE1)
+        foreArm = Component(Point((0, 0.4 * LinkageLength, 0)),
+                            DisplayableRoundCylinder(self.contextParent, 0.1 * LinkageLength, 0.3 * LinkageLength))
+        foreArm.setDefaultColor(color)
         foreArm.uRange = [0, 20]
         foreArm.vRange = [-45, 45]
         foreArm.wRange = [-110, 0]
 
-        hand = Component(Point((0, 0.3*LinkageLength, 0)), DisplayableCube(self.contextParent, 1, [0.4*LinkageLength, 0.25*LinkageLength, 0.8*LinkageLength]))
+        hand = Component(Point((0, 0.3 * LinkageLength, 0)), DisplayableCube(self.contextParent, 1,
+                                                                             [0.4 * LinkageLength, 0.25 * LinkageLength,
+                                                                              0.8 * LinkageLength]))
         hand.setDefaultAngle(hand.uAxis, -90)
-        hand.setDefaultColor(Ct.DARKORANGE2)
+        hand.setDefaultColor(color)
         hand.uRange = [-120, -60]
         hand.vRange = [-20, 20]
         hand.wRange = [-90, 90]
@@ -177,25 +223,26 @@ class ArmLinkage(Component):
         upperArm.addChild(foreArm)
         foreArm.addChild(hand)
 
-        self.components = [humeri, shoulder, foreArm, hand]
+        self.components = [humeri]
 
 
 class LegLinkage(Component):
     """
-    Define our linkage model
+    Define a linkage that forms the leg of an Android
     """
 
     components = None
     contextParent = None
 
-    def __init__(self, parent, position, LinkageLength = 0.1, display_obj=None):
+    def __init__(self, parent, position, color, LinkageLength=0.1, display_obj=None):
         super().__init__(position, display_obj)
         self.components = []
         self.contextParent = parent
         self.chained_rotate = 1
 
-        thigh = Component(Point((0, 0, 0)), DisplayableCylinder(self.contextParent, 0.2*LinkageLength, 0.2*LinkageLength))
-        thigh.setDefaultColor(Ct.DARKORANGE1)
+        thigh = Component(Point((0, 0, 0)),
+                          DisplayableCylinder(self.contextParent, 0.2 * LinkageLength, 0.2 * LinkageLength))
+        thigh.setDefaultColor(color)
         thigh.setDefaultAngle(thigh.wAxis, 90)
         thigh.uRange = [-30, 30]
         thigh.wRange = [90, 90]
@@ -203,14 +250,19 @@ class LegLinkage(Component):
         # we chain thigh and its children so they can be colored together when selected.
         thigh.chained_child = 1
 
-        leg = Component(Point((0, -0.1*LinkageLength, -0.5*LinkageLength)), DisplayableCube(self.contextParent, 1, [0.4*LinkageLength, 0.2*LinkageLength, 0.5*LinkageLength]))
-        leg.setDefaultColor(Ct.DARKORANGE1)
+        leg = Component(Point((0, -0.1 * LinkageLength, -0.5 * LinkageLength)), DisplayableCube(self.contextParent, 1,
+                                                                                                [0.4 * LinkageLength,
+                                                                                                 0.2 * LinkageLength,
+                                                                                                 0.5 * LinkageLength]))
+        leg.setDefaultColor(color)
         # Since the children of leg does not contain any joint,
         # we chain leg and its children so they can be colored together when selected.
         leg.chained_child = 1
 
-        foot = Component(Point((0, 0, -0.1*LinkageLength)), DisplayableCube(self.contextParent, 1, [1.6*LinkageLength, 0.7*LinkageLength, 0.1*LinkageLength]))
-        foot.setDefaultColor(Ct.DARKORANGE2)
+        foot = Component(Point((0, 0, -0.1 * LinkageLength)), DisplayableCube(self.contextParent, 1,
+                                                                              [1.6 * LinkageLength, 0.7 * LinkageLength,
+                                                                               0.1 * LinkageLength]))
+        foot.setDefaultColor(color)
 
         self.setDefaultAngle(self.uAxis, -90)
 
@@ -301,24 +353,9 @@ class DisplayableCube(Displayable):
         gl.glPopMatrix()
         gl.glEndList()
 
-
-##### TODO 1: Construct your two different creatures
-# Requirements:
-#   1. For the basic parts of your creatures, feel free to use routines provided with the previous assignment.
-#   You are also free to create your own basic parts, but they must be polyhedral (solid).
-#   2. The creatures you design should have moving linkages of the basic parts: legs, arms, wings, antennae,
-#   fins, tentacles, etc.
-#   3. Model requirements:
-#         1. Predator: At least one (1) creature. Should have at least two moving parts in addition to the main body
-#         2. Prey: At least two (2) creatures. The two prey can be instances of the same design. Should have at
-#         least one moving part.
-#         3. The predator and prey should have distinguishable different colors.
-#         4. You are welcome to reuse your PA2 creature in this assignment.
-
-
 class Predator(Component, Animation, EnvironmentObject):
     """
-    A Linkage with animation enabled and is defined as an object in environment
+    Define a predator object (hook)
     """
     components = None
     rotation_speed = None
@@ -330,50 +367,35 @@ class Predator(Component, Animation, EnvironmentObject):
 
     def __init__(self, parent, position):
         super(Predator, self).__init__(position)
-        arm1 = ModelLinkage(parent, Point((0, 0, 0)), 0.1)
-        arm2 = ModelLinkage(parent, Point((0, 0, 0)), 0.1)
-        arm2.setDefaultAngle(arm2.vAxis, 120)
-        arm3 = ModelLinkage(parent, Point((0, 0, 0)), 0.1)
-        arm3.setDefaultAngle(arm3.vAxis, 240)
+        hook1 = HookLinkage(parent, Point((0, 0, 0)), 0.05)
+        hook2 = HookLinkage(parent, Point((0, 0, 0)), 0.05)
+        hook2.setDefaultAngle(hook2.vAxis, 180)
+        self.setDefaultAngle(self.vAxis, 270)
 
-        self.components = arm1.components + arm2.components + arm3.components
-        self.addChild(arm1)
-        self.addChild(arm2)
-        self.addChild(arm3)
+        self.components = hook1.components + hook2.components
+        self.addChild(hook1)
+        self.addChild(hook2)
 
         self.rotation_speed = []
         for comp in self.components:
-            comp.setRotateExtent(comp.uAxis, 0, 35)
-            comp.setRotateExtent(comp.vAxis, -45, 45)
-            comp.setRotateExtent(comp.wAxis, -45, 45)
+            comp.setRotateExtent(comp.uAxis, 0, 50)
             self.rotation_speed.append([1, 0, 0])
 
-        self.translation_speed = Point([0,0,0])
+        self.translation_speed = Point([0, 0, 0])
         self.bound_center = Point((0, 0, 0))
-        self.bound_radius = 0.1 * 4
-        self.species_id = 1
+        self.bound_radius = 0.2
+        self.species_id = 2
+        self.initialize()
 
     def animationUpdate(self):
-        ##### TODO 2: Animate your creature!
-        # Requirements:
-        #   1. Set reasonable joints limit for your creature
-        #   2. The linkages should move back and forth in a periodic motion, as the creatures move about the vivarium.
-        #   3. Your creatures should be able to move in 3 dimensions, not only on a plane.
-
         # create period animation for creature joints
         for i, comp in enumerate(self.components):
             comp.rotate(self.rotation_speed[i][0], comp.uAxis)
-            comp.rotate(self.rotation_speed[i][1], comp.vAxis)
-            comp.rotate(self.rotation_speed[i][2], comp.wAxis)
             if comp.uAngle in comp.uRange:  # rotation reached the limit
                 self.rotation_speed[i][0] *= -1
-            if comp.vAngle in comp.vRange:
-                self.rotation_speed[i][1] *= -1
-            if comp.wAngle in comp.wRange:
-                self.rotation_speed[i][2] *= -1
-        #self.vAngle = (self.vAngle + 5) % 360
 
         for item in self.env_obj_list:
+            # Collision detection (tank)
             if isinstance(item, Tank):
                 if not (item.tank_dimensions[0] / 2 - self.bound_radius) > (
                         self.current_position[0] + self.translation_speed[0]) > (
@@ -386,29 +408,148 @@ class Predator(Component, Animation, EnvironmentObject):
                         self.translation_speed[2] > -item.tank_dimensions[2] / 2 + self.bound_radius):
                     self.translation_speed.coords[2] *= -1
 
+            # Moving direction
             elif isinstance(item, EnvironmentObject):
-                # If item is a predator.
-                if item.species_id == 2:
-                    print((item.bound_center - self.bound_center).norm(), (item.bound_radius + self.bound_radius))
-                    if (item.bound_center - self.bound_center).norm() <= (item.bound_radius + self.bound_radius):
-                        self.translation_speed.reflect(item.bound_center - self.bound_center)
-                # If item is a prey.
-                elif item.species_id == 1:
-                    self.translation_speed += (item.current_position - self.current_position)
-                    print((item.bound_center - self.bound_center).norm(), (item.bound_radius + self.bound_radius))
-                    if (item.bound_center - self.bound_center).norm() <= (item.bound_radius + self.bound_radius):
-                        print("here")
+                if item.species_id == 1:
+                    # Apply Gaussian potential
+                    self.translation_speed += (item.current_position - self.current_position) * math.exp(
+                        -1*pow((item.current_position - self.current_position).norm(), 2))
+                elif item.species_id == 0:
+                    self.translation_speed += (item.current_position - self.current_position) * math.exp(
+                        -1*pow((item.current_position - self.current_position).norm(), 2))
 
-        self.translation_speed = self.translation_speed.normalize()*0.01
+            # Collision detection (creature)
+            if isinstance(item, EnvironmentObject):
+                # If item is a predator, bounce back.
+                if item.species_id == 2 and item != self:
+                    if (item.current_position - self.current_position).norm() <= (
+                            item.bound_radius + self.bound_radius):
+                        self.translation_speed.reflect = self.translation_speed.reflect(
+                            item.current_position - self.current_position)
 
         self.local_n_vector = self.translation_speed.normalize()
         self.local_v_vector = self.local_n_vector.cross3d(self.up_vector).normalize()
         self.local_u_vector = self.local_n_vector.cross3d(self.local_v_vector).normalize()
-
+        # Use rotation_matrix to keep object's facing direction the same with its moving direction
         self.pre_rotation_matrix = [
             [self.local_n_vector.coords[0], self.local_n_vector.coords[1], self.local_n_vector[2], 0],
             [self.local_v_vector.coords[0], self.local_v_vector.coords[1], self.local_v_vector[2], 0],
             [self.local_u_vector.coords[0], self.local_u_vector.coords[1], self.local_u_vector[2], 0],
+            [0, 0, 0, 1]
+        ]
+
+        self.translation_speed = self.translation_speed.normalize() * 0.01
+        self.current_position = self.current_position + self.translation_speed
+        self.update()
+
+
+class Prey(Component, Animation, EnvironmentObject):
+    """
+    Define a prey object (An Android)
+    """
+    components = None
+    rotation_speed = None
+    translation_speed = None
+    up_vector = Point((0, 1, 0))
+    local_x_vector = None
+    local_y_vector = None
+    local_z_vector = None
+    vanish_flag = False
+
+    def __init__(self, parent, position, color):
+        super(Prey, self).__init__(position)
+        body = BodyLinkage(parent, Point((0, 0, 0)), color)
+        body.setDefaultAngle(body.wAxis, 180)
+
+        rightArm = ArmLinkage(parent, Point((-0.13, 0.05, -0.005)), color)
+        leftArm = ArmLinkage(parent, Point((0.13, 0.05, -0.005)), color)
+
+        rightLeg = LegLinkage(parent, Point((-0.05, -0.1, 0)), color)
+        leftLeg = LegLinkage(parent, Point((0.03, -0.1, 0)), color)
+
+        body.addChild(rightArm)
+        body.addChild(leftArm)
+        body.addChild(rightLeg)
+        body.addChild(leftLeg)
+
+        self.components = body.components + rightArm.components + leftArm.components + leftLeg.components + rightLeg.components
+        self.addChild(body)
+        self.rotation_speed = []
+
+        for i in range(4):
+            self.components[i].setRotateExtent(self.components[i].uAxis, -45, 45)
+            if i % 2 == 0:
+                self.rotation_speed.append([2, 0, 0])
+            if i % 2 == 1:
+                self.rotation_speed.append([-2, 0, 0])
+
+        self.translation_speed = Point([random.random() - 0.5 for _ in range(3)]).normalize() * 0.02
+
+        self.bound_center = Point((0, 0, 0))
+        self.bound_radius = 0.2
+        self.species_id = 1
+
+        self.initialize()
+
+    def animationUpdate(self):
+        # create period animation for creature joints
+        for i, comp in enumerate(self.components):
+            comp.rotate(self.rotation_speed[i][0], comp.uAxis)
+            if comp.uAngle in comp.uRange:  # rotation reached the limit
+                self.rotation_speed[i][0] *= -1
+
+        for item in self.env_obj_list:
+            # Collision detection (tank)
+            if isinstance(item, Tank):
+                if not (item.tank_dimensions[0] / 2 - self.bound_radius) > (
+                        self.current_position[0] + self.translation_speed[0]) > (
+                               -item.tank_dimensions[0] / 2 + self.bound_radius):
+                    self.translation_speed.coords[0] *= -1
+                    break
+                if not (item.tank_dimensions[1] / 2 - self.bound_radius > self.current_position[1] +
+                        self.translation_speed[1] > -item.tank_dimensions[1] / 2 + self.bound_radius):
+                    self.translation_speed.coords[1] *= -1
+                    break
+                if not (item.tank_dimensions[2] / 2 - self.bound_radius > self.current_position[2] +
+                        self.translation_speed[2] > -item.tank_dimensions[2] / 2 + self.bound_radius):
+                    self.translation_speed.coords[2] *= -1
+                    break
+
+            elif isinstance(item, EnvironmentObject):
+                # If item is a predator.
+                if item.species_id == 2:
+                    # If collide, remove prey.
+                    if (item.current_position - self.current_position).norm() <= (
+                            item.bound_radius + self.bound_radius):
+                        self.vanish_flag = True
+                # If item is a prey.
+                elif item.species_id == 1 and item != self:
+                    # If collide, bounce back.
+                    if (item.current_position - self.current_position).norm() <= (
+                            item.bound_radius + self.bound_radius):
+                        self.translation_speed = self.translation_speed.reflect(
+                            item.current_position - self.current_position)
+                        item.translation_speed = self.translation_speed.reflect(
+                            item.current_position - self.current_position)
+                        break
+                # If item is a food.
+                if item.species_id == 0:
+                    # Change moving direction toward the food
+                    self.translation_speed += (item.current_position - self.current_position) * math.exp(
+                        -1*pow((item.current_position - self.current_position).norm(), 2))
+
+        self.translation_speed = self.translation_speed.normalize() * 0.02
+        self.bound_center += self.translation_speed
+
+        self.local_z_vector = self.translation_speed.normalize()
+        self.local_x_vector = self.local_z_vector.cross3d(self.up_vector).normalize()
+        self.local_y_vector = self.local_z_vector.cross3d(self.local_x_vector).normalize()
+
+        # Use rotation_matrix to keep object's facing direction the same with its moving direction
+        self.pre_rotation_matrix = [
+            [self.local_x_vector.coords[0], self.local_x_vector.coords[1], self.local_x_vector[2], 0],
+            [self.local_y_vector.coords[0], self.local_y_vector.coords[1], self.local_y_vector[2], 0],
+            [self.local_z_vector.coords[0], self.local_z_vector.coords[1], self.local_z_vector[2], 0],
             [0, 0, 0, 1]
         ]
 
@@ -416,86 +557,55 @@ class Predator(Component, Animation, EnvironmentObject):
         self.update()
 
 
-class Prey(Component, Animation, EnvironmentObject):
+class Food(Component, Animation, EnvironmentObject):
     """
-    A Linkage with animation enabled and is defined as an object in environment
+    Defines a food object.
     """
     components = None
-    rotation_speed = None
     translation_speed = None
-    up_vector = Point((0, 1, 0))
     local_n_vector = None
     local_v_vector = None
     local_u_vector = None
+    vanish_flag = False
 
     def __init__(self, parent, position):
-        super(Prey, self).__init__(position)
-        body = BodyLinkage(parent, Point((0, 0, 0)))
-        body.setDefaultAngle(body.vAxis, 90)
+        super(Food, self).__init__(position)
+        food = Component(Point((0, 0, 0)), DisplayableSphere(parent, 0.03))
+        food.setDefaultColor(Ct.DARKGREEN)
 
-        rightArm = ArmLinkage(parent, Point((-0.13, 0.05, -0.005)))
-        leftArm = ArmLinkage(parent, Point((0.13, 0.05, -0.005)))
-        for i in range(4):
-            # Mirror two arms by flipping the wAxis direction of five joints.
-            leftArm.components[i].wAxis = [0, 0, -1]
+        self.components = [food]
+        self.addChild(food)
+        self.initialize()
 
-        rightLeg = LegLinkage(parent, Point((-0.05, -0.1, 0)))
-        leftLeg = LegLinkage(parent, Point((0.03, -0.1, 0)))
-        body.components[0].addChild(rightArm)
-        body.components[0].addChild(leftArm)
-        body.addChild(rightLeg)
-        body.addChild(leftLeg)
-
-        self.components = body.components + rightArm.components + leftArm.components + leftLeg.components + rightLeg.components
-        self.addChild(body)
-        self.rotation_speed = []
-        # for comp in self.components:
-        #     comp.setRotateExtent(comp.uAxis, 0, 35)
-        #     comp.setRotateExtent(comp.vAxis, -45, 45)
-        #     comp.setRotateExtent(comp.wAxis, -45, 45)
-        #     self.rotation_speed.append([1, 0, 0])
-
-        self.translation_speed = Point([random.random() - 0.5 for _ in range(3)]).normalize() * 0.01
-
+        self.translation_speed = Point([0, -0.006, 0])
         self.bound_center = Point((0, 0, 0))
-        self.bound_radius = 0.1 * 4
-        self.species_id = 1
+        self.bound_radius = 0.1
+        self.species_id = 0
 
     def animationUpdate(self):
-        ##### TODO 2: Animate your creature!
-        # Requirements:
-        #   1. Set reasonable joints limit for your creature
-        #   2. The linkages should move back and forth in a periodic motion, as the creatures move about the vivarium.
-        #   3. Your creatures should be able to move in 3 dimensions, not only on a plane.
-
-        # create period animation for creature joints
 
         for item in self.env_obj_list:
+            # Collision detection (tank)
             if isinstance(item, Tank):
                 if not (item.tank_dimensions[0] / 2 - self.bound_radius) > (
                         self.current_position[0] + self.translation_speed[0]) > (
                                -item.tank_dimensions[0] / 2 + self.bound_radius):
-                    self.translation_speed.coords[0] *= -1
+                    self.translation_speed.coords[0] = 0
                 if not (item.tank_dimensions[1] / 2 - self.bound_radius > self.current_position[1] +
                         self.translation_speed[1] > -item.tank_dimensions[1] / 2 + self.bound_radius):
-                    self.translation_speed.coords[1] *= -1
+                    self.translation_speed.coords[1] = 0
                 if not (item.tank_dimensions[2] / 2 - self.bound_radius > self.current_position[2] +
                         self.translation_speed[2] > -item.tank_dimensions[2] / 2 + self.bound_radius):
-                    self.translation_speed.coords[2] *= -1
+                    self.translation_speed.coords[2] = 0
 
-        self.local_n_vector = self.translation_speed.normalize()
-        self.local_v_vector = self.local_n_vector.cross3d(self.up_vector).normalize()
-        self.local_u_vector = self.local_n_vector.cross3d(self.local_v_vector).normalize()
-
-        self.pre_rotation_matrix = [
-            [self.local_n_vector.coords[0], self.local_n_vector.coords[1], self.local_n_vector[2], 0],
-            [self.local_v_vector.coords[0], self.local_v_vector.coords[1], self.local_v_vector[2], 0],
-            [self.local_u_vector.coords[0], self.local_u_vector.coords[1], self.local_u_vector[2], 0],
-            [0, 0, 0, 1]
-        ]
+            # Collision detection (creature), if collide, the object vanishes.
+            elif isinstance(item, EnvironmentObject):
+                if item.species_id > self.species_id:
+                    if (item.current_position - self.current_position).norm() <= (
+                            item.bound_radius + self.bound_radius):
+                        self.vanish_flag = True
 
         self.current_position = self.current_position + self.translation_speed
-        print(self.current_position)
         self.update()
 
         ##### TODO 3: Interact with the environment
